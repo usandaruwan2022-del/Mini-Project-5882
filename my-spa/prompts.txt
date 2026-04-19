@@ -1,0 +1,11 @@
+The aim 01: Set up a Vue 3 + TypeScript + Vite project with Tailwind CSS
+Actual prompt: Give me step-by-step instructions in Sinhala to create this assignment from the beginning.
+
+The aim 02: Create TypeScript interfaces and API service for DummyJSON products
+Actual prompt: Give me the code step by step for product.ts and productService.ts.
+
+The aim 03: Build reusable Vue components for search, filtering, product cards, grid, and modal
+Actual prompt: Give me each component file one by one with full code.
+
+The aim 04: Build the main App.vue and connect all components
+Actual prompt: Give me the full App.vue code and explain where to paste it.
