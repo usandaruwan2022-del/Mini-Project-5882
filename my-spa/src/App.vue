@@ -4,8 +4,10 @@ import SearchBar from './components/SearchBar.vue'
 import CategoryFilter from './components/CategoryFilter.vue'
 import ProductGrid from './components/ProductGrid.vue'
 import ProductModal from './components/ProductModal.vue'
+import LoginForm from './components/LoginForm.vue'
 import { fetchCategories, fetchProducts } from './services/productService'
 import type { Product } from './types/product'
+import type { LoginResponse } from './types/auth'
 
 const products = ref<Product[]>([])
 const categories = ref<string[]>([])
@@ -16,7 +18,18 @@ const selectedProduct = ref<Product | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
 
+const isLoggedIn = ref(false)
+const authUser = ref<LoginResponse | null>(null)
+
 onMounted(async () => {
+  const savedUser = localStorage.getItem('authUser')
+  const savedToken = localStorage.getItem('accessToken')
+
+  if (savedUser && savedToken) {
+    authUser.value = JSON.parse(savedUser) as LoginResponse
+    isLoggedIn.value = true
+  }
+
   try {
     isLoading.value = true
 
@@ -54,16 +67,62 @@ function openModal(product: Product) {
 function closeModal() {
   selectedProduct.value = null
 }
+
+function handleLoginSuccess(user: LoginResponse) {
+  authUser.value = user
+  isLoggedIn.value = true
+}
+
+function handleLogout() {
+  const confirmed = confirm('Are you sure you want to log out?')
+
+  if (!confirmed) return
+
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('authUser')
+
+  authUser.value = null
+  isLoggedIn.value = false
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100">
+  <LoginForm
+    v-if="!isLoggedIn"
+    @login-success="handleLoginSuccess"
+  />
+
+  <div v-else class="min-h-screen bg-slate-100">
     <header class="bg-slate-900 py-4 text-white shadow-md">
-      <div class="mx-auto max-w-7xl px-4">
-        <h1 class="text-2xl font-bold">My Product Store</h1>
-        <p class="text-sm text-slate-300">
-          Vue 3 + TypeScript + Tailwind SPA
-        </p>
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-4">
+        <div>
+          <h1 class="text-2xl font-bold">My Product Store</h1>
+          <p class="text-sm text-slate-300">
+            Vue 3 + TypeScript + Tailwind SPA
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="hidden text-right sm:block">
+            <p class="text-sm font-semibold">{{ authUser?.firstName }} {{ authUser?.lastName }}</p>
+            <p class="text-xs text-slate-300">{{ authUser?.username }}</p>
+          </div>
+
+          <img
+            v-if="authUser?.image"
+            :src="authUser.image"
+            :alt="authUser.username"
+            class="h-10 w-10 rounded-full border border-slate-500 object-cover"
+          />
+
+          <button
+            @click="handleLogout"
+            class="rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+          >
+            Log Out
+          </button>
+        </div>
       </div>
     </header>
 
