@@ -21,7 +21,15 @@ const errorMessage = ref('')
 const isLoggedIn = ref(false)
 const authUser = ref<LoginResponse | null>(null)
 
+const isDarkMode = ref(false)
+
 onMounted(async () => {
+  const savedTheme = localStorage.getItem('theme')
+
+  if (savedTheme === 'dark') {
+    isDarkMode.value = true
+  }
+
   const savedUser = localStorage.getItem('authUser')
   const savedToken = localStorage.getItem('accessToken')
 
@@ -85,90 +93,124 @@ function handleLogout() {
   authUser.value = null
   isLoggedIn.value = false
 }
+
+function toggleDarkMode() {
+  isDarkMode.value = !isDarkMode.value
+
+  if (isDarkMode.value) {
+    localStorage.setItem('theme', 'dark')
+  } else {
+    localStorage.setItem('theme', 'light')
+  }
+}
 </script>
 
 <template>
-  <LoginForm
-    v-if="!isLoggedIn"
-    @login-success="handleLoginSuccess"
-  />
+  <div :class="isDarkMode ? 'dark' : ''">
+    <LoginForm
+      v-if="!isLoggedIn"
+      @login-success="handleLoginSuccess"
+    />
 
-  <div v-else class="min-h-screen bg-slate-100">
-    <header class="bg-slate-900 py-4 text-white shadow-md">
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-4">
-        <div>
-          <h1 class="text-2xl font-bold">My Product Store</h1>
-          <p class="text-sm text-slate-300">
-            Vue 3 + TypeScript + Tailwind SPA
-          </p>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <div class="hidden text-right sm:block">
-            <p class="text-sm font-semibold">{{ authUser?.firstName }} {{ authUser?.lastName }}</p>
-            <p class="text-xs text-slate-300">{{ authUser?.username }}</p>
+    <div
+      v-else
+      class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-white"
+    >
+      <header class="bg-slate-900 py-4 text-white shadow-md dark:bg-slate-950">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">My Product Store</h1>
+            <p class="text-sm text-slate-300">
+              Vue 3 + TypeScript + Tailwind SPA
+            </p>
           </div>
 
-          <img
-            v-if="authUser?.image"
-            :src="authUser.image"
-            :alt="authUser.username"
-            class="h-10 w-10 rounded-full border border-slate-500 object-cover"
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="hidden text-right sm:block">
+              <p class="text-sm font-semibold">
+                {{ authUser?.firstName }} {{ authUser?.lastName }}
+              </p>
+              <p class="text-xs text-slate-300">
+                {{ authUser?.username }}
+              </p>
+            </div>
+
+            <img
+              v-if="authUser?.image"
+              :src="authUser.image"
+              :alt="authUser.username"
+              class="h-10 w-10 rounded-full border border-slate-500 object-cover"
+            />
+
+            <button
+              @click="toggleDarkMode"
+              class="rounded-xl bg-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-600 dark:bg-yellow-400 dark:text-slate-900 dark:hover:bg-yellow-300"
+            >
+              {{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}
+            </button>
+
+            <button
+              @click="handleLogout"
+              class="rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-7xl px-4 py-6">
+        <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <SearchBar
+            :searchTerm="searchTerm"
+            @update:searchTerm="searchTerm = $event"
           />
 
-          <button
-            @click="handleLogout"
-            class="rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
-          >
-            Log Out
-          </button>
+          <CategoryFilter
+            :categories="categories"
+            :selectedCategory="selectedCategory"
+            @update:selectedCategory="selectedCategory = $event"
+          />
         </div>
-      </div>
-    </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-6">
-      <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <SearchBar
-          :searchTerm="searchTerm"
-          @update:searchTerm="searchTerm = $event"
-        />
+        <div
+          v-if="isLoading"
+          class="py-10 text-center text-lg text-slate-600 dark:text-slate-300"
+        >
+          Loading products...
+        </div>
 
-        <CategoryFilter
-          :categories="categories"
-          :selectedCategory="selectedCategory"
-          @update:selectedCategory="selectedCategory = $event"
-        />
-      </div>
+        <div
+          v-else-if="errorMessage"
+          class="py-10 text-center text-red-600"
+        >
+          {{ errorMessage }}
+        </div>
 
-      <div
-        v-if="isLoading"
-        class="py-10 text-center text-lg text-slate-600"
-      >
-        Loading products...
-      </div>
+        <div v-else>
+          <p class="mb-4 text-slate-600 dark:text-slate-300">
+            Found {{ filteredProducts.length }} products
+          </p>
 
-      <div
-        v-else-if="errorMessage"
-        class="py-10 text-center text-red-600"
-      >
-        {{ errorMessage }}
-      </div>
+          <div
+            v-if="filteredProducts.length === 0"
+            class="rounded-2xl bg-white p-8 text-center text-slate-500 shadow dark:bg-slate-800 dark:text-slate-300"
+          >
+            No products found.
+          </div>
 
-      <div v-else>
-        <p class="mb-4 text-slate-600">
-          Found {{ filteredProducts.length }} products
-        </p>
+          <ProductGrid
+            v-else
+            :products="filteredProducts"
+            @view="openModal"
+          />
+        </div>
+      </main>
 
-        <ProductGrid
-          :products="filteredProducts"
-          @view="openModal"
-        />
-      </div>
-    </main>
-
-    <ProductModal
-      :product="selectedProduct"
-      @close="closeModal"
-    />
+      <ProductModal
+        :product="selectedProduct"
+        @close="closeModal"
+      />
+    </div>
   </div>
 </template>
