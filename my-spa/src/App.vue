@@ -6,6 +6,7 @@ import ProductGrid from './components/ProductGrid.vue'
 import ProductModal from './components/ProductModal.vue'
 import LoginForm from './components/LoginForm.vue'
 import { fetchCategories, fetchProducts } from './services/productService'
+import { useBookmarks } from './composables/useBookmarks'
 import type { Product } from './types/product'
 import type { LoginResponse } from './types/auth'
 
@@ -20,8 +21,16 @@ const errorMessage = ref('')
 
 const isLoggedIn = ref(false)
 const authUser = ref<LoginResponse | null>(null)
-
 const isDarkMode = ref(false)
+const isCartOpen = ref(false)
+
+const { cartItems, cartCount, toggleCart } = useBookmarks()
+
+const USD_TO_LKR = 300
+
+function formatLkr(price: number): string {
+  return `Rs. ${(price * USD_TO_LKR).toLocaleString()}`
+}
 
 onMounted(async () => {
   const savedTheme = localStorage.getItem('theme')
@@ -103,6 +112,10 @@ function toggleDarkMode() {
     localStorage.setItem('theme', 'light')
   }
 }
+
+function toggleCartPanel() {
+  isCartOpen.value = !isCartOpen.value
+}
 </script>
 
 <template>
@@ -116,22 +129,31 @@ function toggleDarkMode() {
       v-else
       class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-white"
     >
-      <header class="bg-slate-900 py-4 text-white shadow-md dark:bg-slate-950">
+      <header class="border-b border-slate-700 bg-slate-900 py-4 text-white shadow-lg dark:bg-slate-950">
         <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 class="text-2xl font-bold">My Product Store</h1>
-            <p class="text-sm text-slate-300">
-              Vue 3 + TypeScript + Tailwind SPA
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+              Uditha Store
+            </h1>
+            <p class="mt-1 text-xs tracking-wide text-slate-300">
+              Sri Lankan Smart Product Catalog
             </p>
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
+            <button
+              @click="toggleCartPanel"
+              class="rounded-xl bg-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-600"
+            >
+              Shopping Cart ({{ cartCount }})
+            </button>
+
             <div class="hidden text-right sm:block">
-              <p class="text-sm font-semibold">
-                {{ authUser?.firstName }} {{ authUser?.lastName }}
+              <p class="text-sm font-semibold text-white">
+                Uditha Sadruwan
               </p>
               <p class="text-xs text-slate-300">
-                {{ authUser?.username }}
+                uditha
               </p>
             </div>
 
@@ -189,7 +211,7 @@ function toggleDarkMode() {
 
         <div v-else>
           <p class="mb-4 text-slate-600 dark:text-slate-300">
-            Found {{ filteredProducts.length }} products
+            Found {{ filteredProducts.length }} products in LKR prices
           </p>
 
           <div
@@ -206,6 +228,70 @@ function toggleDarkMode() {
           />
         </div>
       </main>
+
+      <div
+        v-if="isCartOpen"
+        class="fixed inset-0 z-40 bg-black/40"
+        @click="isCartOpen = false"
+      ></div>
+
+      <div
+        class="fixed right-0 top-0 z-50 h-full w-full max-w-md transform bg-white p-5 shadow-2xl transition dark:bg-slate-900"
+        :class="isCartOpen ? 'translate-x-0' : 'translate-x-full'"
+      >
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+          <h2 class="text-xl font-bold text-slate-800 dark:text-white">
+            Shopping Cart
+          </h2>
+
+          <button
+            @click="isCartOpen = false"
+            class="rounded-lg bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
+          >
+            X
+          </button>
+        </div>
+
+        <div class="mt-4 space-y-4 overflow-y-auto">
+          <div
+            v-if="cartItems.length === 0"
+            class="rounded-2xl bg-slate-100 p-6 text-center text-slate-500 dark:bg-slate-800 dark:text-slate-300"
+          >
+            Your shopping cart is empty.
+          </div>
+
+          <div
+            v-for="item in cartItems"
+            :key="item.id"
+            class="flex gap-4 rounded-2xl border border-slate-200 p-3 dark:border-slate-700"
+          >
+            <img
+              :src="item.thumbnail"
+              :alt="item.title"
+              class="h-20 w-20 rounded-xl object-cover"
+            />
+
+            <div class="flex-1">
+              <h3 class="font-semibold text-slate-800 dark:text-white">
+                {{ item.title }}
+              </h3>
+              <p class="text-sm text-slate-500 dark:text-slate-300">
+                {{ item.brand }}
+              </p>
+              <p class="mt-1 font-semibold text-blue-600 dark:text-yellow-400">
+                {{ formatLkr(item.price) }}
+              </p>
+
+              <button
+                @click="toggleCart(item)"
+                class="mt-2 rounded-lg bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <ProductModal
         :product="selectedProduct"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Product } from '../types/product'
+import { useBookmarks } from '../composables/useBookmarks'
 
 defineProps<{
   product: Product
@@ -8,15 +9,31 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'view', product: Product): void
 }>()
+
+const USD_TO_LKR = 300
+const { isInCart, toggleCart } = useBookmarks()
+
+function formatLkr(price: number): string {
+  return `Rs. ${(price * USD_TO_LKR).toLocaleString()}`
+}
 </script>
 
 <template>
   <div class="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-xl dark:bg-slate-800">
-    <img
-      :src="product.thumbnail"
-      :alt="product.title"
-      class="h-48 w-full rounded-xl object-cover"
-    />
+    <div class="relative">
+      <img
+        :src="product.thumbnail"
+        :alt="product.title"
+        class="h-48 w-full rounded-xl object-cover"
+      />
+
+      <button
+        @click="toggleCart(product)"
+        class="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold shadow hover:bg-white dark:bg-slate-900 dark:text-white"
+      >
+        {{ isInCart(product.id) ? '✓' : '+' }}
+      </button>
+    </div>
 
     <div class="mt-4">
       <h2 class="text-lg font-bold text-slate-800 dark:text-white">
@@ -32,7 +49,7 @@ const emit = defineEmits<{
       </p>
 
       <p class="mt-2 text-xl font-semibold text-blue-600 dark:text-yellow-400">
-        ${{ product.price }}
+        {{ formatLkr(product.price) }}
       </p>
 
       <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
