@@ -24,7 +24,13 @@ const authUser = ref<LoginResponse | null>(null)
 const isDarkMode = ref(false)
 const isCartOpen = ref(false)
 
-const { cartItems, cartCount, toggleCart } = useBookmarks()
+const {
+  cartItems,
+  cartCount,
+  removeFromCart,
+  increaseQty,
+  decreaseQty,
+} = useBookmarks()
 
 const USD_TO_LKR = 300
 
@@ -32,9 +38,15 @@ function formatLkr(price: number): string {
   return `Rs. ${(price * USD_TO_LKR).toLocaleString()}`
 }
 
+const cartTotal = computed(() => {
+  return cartItems.value.reduce(
+    (total, item) => total + item.price * item.quantity * USD_TO_LKR,
+    0
+  )
+})
+
 onMounted(async () => {
   const savedTheme = localStorage.getItem('theme')
-
   if (savedTheme === 'dark') {
     isDarkMode.value = true
   }
@@ -48,8 +60,6 @@ onMounted(async () => {
   }
 
   try {
-    isLoading.value = true
-
     const productData = await fetchProducts()
     const categoryData = await fetchCategories()
 
@@ -92,7 +102,6 @@ function handleLoginSuccess(user: LoginResponse) {
 
 function handleLogout() {
   const confirmed = confirm('Are you sure you want to log out?')
-
   if (!confirmed) return
 
   localStorage.removeItem('accessToken')
@@ -105,16 +114,20 @@ function handleLogout() {
 
 function toggleDarkMode() {
   isDarkMode.value = !isDarkMode.value
-
-  if (isDarkMode.value) {
-    localStorage.setItem('theme', 'dark')
-  } else {
-    localStorage.setItem('theme', 'light')
-  }
+  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
 }
 
 function toggleCartPanel() {
   isCartOpen.value = !isCartOpen.value
+}
+
+function handleBuyNow() {
+  if (cartItems.value.length === 0) {
+    alert('Your shopping cart is empty.')
+    return
+  }
+
+  alert('Order placed successfully!')
 }
 </script>
 
@@ -141,13 +154,6 @@ function toggleCartPanel() {
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
-            <button
-              @click="toggleCartPanel"
-              class="rounded-xl bg-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-600"
-            >
-              Shopping Cart ({{ cartCount }})
-            </button>
-
             <div class="hidden text-right sm:block">
               <p class="text-sm font-semibold text-white">
                 Uditha Sadruwan
@@ -235,63 +241,126 @@ function toggleCartPanel() {
         @click="isCartOpen = false"
       ></div>
 
-      <div
-        class="fixed right-0 top-0 z-50 h-full w-full max-w-md transform bg-white p-5 shadow-2xl transition dark:bg-slate-900"
-        :class="isCartOpen ? 'translate-x-0' : 'translate-x-full'"
+      <transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="translate-x-full opacity-0"
+        enter-to-class="translate-x-0 opacity-100"
+        leave-active-class="transition duration-300 ease-in"
+        leave-from-class="translate-x-0 opacity-100"
+        leave-to-class="translate-x-full opacity-0"
       >
-        <div class="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
-          <h2 class="text-xl font-bold text-slate-800 dark:text-white">
-            Shopping Cart
-          </h2>
-
-          <button
-            @click="isCartOpen = false"
-            class="rounded-lg bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
-          >
-            X
-          </button>
-        </div>
-
-        <div class="mt-4 space-y-4 overflow-y-auto">
-          <div
-            v-if="cartItems.length === 0"
-            class="rounded-2xl bg-slate-100 p-6 text-center text-slate-500 dark:bg-slate-800 dark:text-slate-300"
-          >
-            Your shopping cart is empty.
-          </div>
-
-          <div
-            v-for="item in cartItems"
-            :key="item.id"
-            class="flex gap-4 rounded-2xl border border-slate-200 p-3 dark:border-slate-700"
-          >
-            <img
-              :src="item.thumbnail"
-              :alt="item.title"
-              class="h-20 w-20 rounded-xl object-cover"
-            />
-
-            <div class="flex-1">
-              <h3 class="font-semibold text-slate-800 dark:text-white">
-                {{ item.title }}
-              </h3>
-              <p class="text-sm text-slate-500 dark:text-slate-300">
-                {{ item.brand }}
-              </p>
-              <p class="mt-1 font-semibold text-blue-600 dark:text-yellow-400">
-                {{ formatLkr(item.price) }}
-              </p>
+        <aside
+          v-if="isCartOpen"
+          class="fixed right-4 top-20 z-50 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-800"
+        >
+          <div class="flex h-[75vh] flex-col">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+              <h2 class="text-lg font-bold text-slate-800 dark:text-white">
+                Shopping Cart
+              </h2>
 
               <button
-                @click="toggleCart(item)"
-                class="mt-2 rounded-lg bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+                @click="isCartOpen = false"
+                class="rounded-lg bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
               >
-                Remove
+                X
               </button>
             </div>
+
+            <div class="mt-4 flex-1 space-y-4 overflow-y-auto pr-2">
+              <div
+                v-if="cartItems.length === 0"
+                class="rounded-2xl bg-slate-100 p-6 text-center text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+              >
+                Your shopping cart is empty.
+              </div>
+
+              <div
+                v-for="item in cartItems"
+                :key="item.id"
+                class="rounded-2xl border border-slate-200 p-3 dark:border-slate-700"
+              >
+                <div class="flex gap-3">
+                  <img
+                    :src="item.thumbnail"
+                    :alt="item.title"
+                    class="h-16 w-16 rounded-xl object-cover"
+                  />
+
+                  <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-white">
+                      {{ item.title }}
+                    </h3>
+
+                    <p class="text-xs text-slate-500 dark:text-slate-300">
+                      {{ item.brand }}
+                    </p>
+
+                    <p class="mt-1 text-sm font-semibold text-blue-600 dark:text-yellow-400">
+                      {{ formatLkr(item.price) }}
+                    </p>
+
+                    <div class="mt-2 flex items-center gap-2">
+                      <button
+                        @click="decreaseQty(item.id)"
+                        class="rounded-lg bg-slate-200 px-2 py-1 text-sm font-bold dark:bg-slate-700"
+                      >
+                        -
+                      </button>
+
+                      <span class="text-sm font-medium">{{ item.quantity }}</span>
+
+                      <button
+                        @click="increaseQty(item.id)"
+                        class="rounded-lg bg-slate-200 px-2 py-1 text-sm font-bold dark:bg-slate-700"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <button
+                      @click="removeFromCart(item.id)"
+                      class="mt-3 rounded-lg bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="cartItems.length > 0"
+              class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700"
+            >
+              <div class="rounded-2xl bg-slate-100 p-4 dark:bg-slate-700">
+                <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Total: Rs. {{ cartTotal.toLocaleString() }}
+                </p>
+
+                <button
+                  @click="handleBuyNow"
+                  class="mt-3 w-full rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+                >
+                  Buy Now
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </aside>
+      </transition>
+
+      <button
+        @click="toggleCartPanel"
+        class="fixed bottom-6 right-6 z-50 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-xl transition hover:scale-105 hover:bg-blue-700 dark:bg-yellow-400 dark:text-slate-900 dark:hover:bg-yellow-300"
+      >
+        Cart
+        <span
+          class="ml-2 rounded-full bg-red-500 px-2 py-1 text-xs text-white"
+        >
+          {{ cartCount }}
+        </span>
+      </button>
 
       <ProductModal
         :product="selectedProduct"
