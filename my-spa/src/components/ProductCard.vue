@@ -11,7 +11,7 @@ const emit = defineEmits<{
 }>()
 
 const USD_TO_LKR = 300
-const { isInCart, toggleCart } = useBookmarks()
+const { isInCart, addToCart } = useBookmarks()
 
 function formatLkr(price: number): string {
   return `Rs. ${(price * USD_TO_LKR).toLocaleString()}`
@@ -19,7 +19,7 @@ function formatLkr(price: number): string {
 </script>
 
 <template>
-  <div class="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-xl dark:bg-slate-800">
+  <div class="rounded-2xl bg-white p-4 shadow-md transition duration-300 hover:shadow-xl dark:bg-slate-800">
     <div class="relative">
       <img
         :src="product.thumbnail"
@@ -28,7 +28,7 @@ function formatLkr(price: number): string {
       />
 
       <button
-        @click="toggleCart(product)"
+        @click="addToCart(product)"
         class="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold shadow hover:bg-white dark:bg-slate-900 dark:text-white"
       >
         {{ isInCart(product.id) ? '✓' : '+' }}
@@ -48,7 +48,7 @@ function formatLkr(price: number): string {
         Brand: {{ product.brand }}
       </p>
 
-      <p class="mt-2 text-xl font-semibold text-blue-600 dark:text-yellow-400">
+      <p class="mt-2 text-2xl font-extrabold text-blue-600 dark:text-yellow-400">
         {{ formatLkr(product.price) }}
       </p>
 
