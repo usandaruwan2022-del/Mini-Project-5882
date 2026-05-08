@@ -1,6 +1,6 @@
 # My Product Store SPA
 
-A data-driven Single Page Application built using Vue 3, TypeScript, Vite, and Tailwind CSS.
+A data driven Single Page Application built using Vue 3, TypeScript, Vite, and Tailwind CSS.
 
 ## Features
 - Fetches product data from DummyJSON API
@@ -8,23 +8,33 @@ A data-driven Single Page Application built using Vue 3, TypeScript, Vite, and T
 - Filter products by category
 - View product details in a modal
 - Responsive design for mobile, tablet, and desktop
+- Authentication simulation using DummyJSON `/auth/login`
+- Login/logout state persisted with localStorage
+- Dark mode / light mode toggle
 
 ## Tech Stack
 - Vue 3
 - TypeScript
 - Vite
 - Tailwind CSS
-
-## User Authentication 
-- Authentication simulation using DummyJSON /auth/login
-- Login/logout state stored with localStorage
+- DummyJSON API
 
 ## How to Run
 1. Install dependencies:
    npm install
 
 2. Start development server:
-   npm run dev
+   cd my-spa
+npm run dev
 
 3. Open in browser:
    http://localhost:5173/
+
+## Demo Login
+- Username: emilys
+- Password: emilyspass
+
+## GitHub link
+https://github.com/usandaruwan2022-del/Mini-Project-5882.git
+
+
